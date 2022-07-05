@@ -115,3 +115,11 @@ model.load_weights('.mdl_wts_v2.hdf5')
 # Re-evaluate the model
 loss, acc = model.evaluate(val_ds, verbose=2)
 print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+
+# serialize model to JSON
+model_json = model.to_json()
+with open("model_baseline.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+model.save_weights("model_baseline.h5")
+print("Saved model to disk")

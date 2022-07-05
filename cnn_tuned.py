@@ -1,4 +1,5 @@
 import tensorflow as tf
+from tensorflow.keras.models import model_from_json
 from tensorflow.keras.optimizers import Adam
 import keras_tuner as kt
 from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint,ReduceLROnPlateau
@@ -33,10 +34,14 @@ print(class_names)
 
 data_augmentation = tf.keras.Sequential([
   tf.keras.layers.RandomFlip("horizontal_and_vertical"),
-  tf.keras.layers.RandomRotation(0.2),
+  tf.keras.layers.RandomRotation(0.2)
 ])
 
-def model_builder(hp):
+
+
+
+
+def build_model(hp):  # random search passes this hyperparameter() object
     model = tf.keras.Sequential()
     model.add(data_augmentation)
     model.add(tf.keras.layers.Rescaling(1. / 255))
@@ -57,29 +62,27 @@ def model_builder(hp):
     model.add(tf.keras.layers.AveragePooling2D())
 
     model.add(tf.keras.layers.Flatten())
-    hp_units_1 = hp.Int('units1', min_value=88, max_value=248, step=32)
-    model.add(tf.keras.layers.Dense(units=hp_units_1, activation='relu'))
-    hp_units_2 = hp.Int('units2', min_value=32, max_value=128, step=32)
-    model.add(tf.keras.layers.Dense(units=hp_units_2, activation='relu'))
 
+    model.add(tf.keras.layers.Dense(units=120, activation='relu'))
+
+    model.add(tf.keras.layers.Dense(units=84, activation='relu'))
+    units_3 = hp.Int('units_hp', min_value = 28, max_value = 84, step = 8)
+
+    model.add(tf.keras.layers.Dense(units = units_3, activation='relu'))
     model.add(tf.keras.layers.Dense(units=3, activation='softmax'))
-
-
-
-    model.compile(optimizer=Adam(lr=0.001),loss='categorical_crossentropy',metrics=['accuracy'])
-
+    model.compile(optimizer=Adam(lr=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
-batch_size = 32
-tuner = kt.Hyperband(model_builder,
+batch_size = 64
+tuner = kt.Hyperband(build_model,
                      objective='val_accuracy',
-                     max_epochs=100,
-                     factor=12,
+                     max_epochs=50,
+                     factor=8,
                      hyperband_iterations=3,
-                     directory='my_dir',
-                     project_name='intro_to_kt')
+                     directory='tuning',
+                     project_name='neuron tuning')
 
-stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_loss', patience=15)
+stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15)
 #mcp_save = ModelCheckpoint('.mdl_wts_v2.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
 
 tuner.search(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=150, callbacks=[stop_early])
@@ -88,9 +91,8 @@ tuner.search(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=1
 best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
 
 print(f"""
-The hyperparameter search is complete. The optimal number of units in the first densely-connected
-layer is {best_hps.get('units1')} and the optimal number in the second layer 
-is {best_hps.get('units2')}.
+The optimal number of units in the new densely-connected
+layer is {best_hps.get('units_hp')}
 """)
 
 # Build the model with the optimal hyperparameters and train it on the data for 50 epochs
@@ -103,7 +105,7 @@ print('Best epoch: %d' % (best_epoch,))
 
 hypermodel = tuner.hypermodel.build(best_hps)
 
-mcp_save = ModelCheckpoint('.mdl_wts_v3.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
+mcp_save = ModelCheckpoint('.mdl_wts_best_model_tuned.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
 
 # Retrain the model
 history = hypermodel.fit(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=best_epoch, callbacks=[mcp_save])
@@ -132,8 +134,17 @@ plt.show()
 
 # evaluate on test set
 # Loads the weights
-hypermodel.load_weights('.mdl_wts_v3.hdf5')
+hypermodel.load_weights('.mdl_wts_best_model_tuned.hdf5')
 
 # Re-evaluate the model
 loss, acc = hypermodel.evaluate(val_ds, verbose=2)
 print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
+
+# serialize model to JSON
+model_json = hypermodel.to_json()
+with open("model_tuned_one.json", "w") as json_file:
+    json_file.write(model_json)
+# serialize weights to HDF5
+hypermodel.save_weights("model_tuned_one.h5")
+print("Saved model to disk")
+
