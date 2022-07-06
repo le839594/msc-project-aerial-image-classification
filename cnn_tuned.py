@@ -95,7 +95,7 @@ layer is {best_hps.get('units_hp')}
 """)
 
 
-# Build the model with the optimal hyperparameters and train it on the data for 50 epochs
+# Build the model with the optimal hyperparameters and train it on the data for 150 epochs
 model = tuner.hypermodel.build(best_hps)
 history = model.fit(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=150)
 
