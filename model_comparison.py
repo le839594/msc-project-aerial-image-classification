@@ -61,3 +61,19 @@ loss, score = loaded_model.evaluate(val_ds, verbose=2)
 print("Tuned - One additional layer")
 print("%s: %.2f%%" % (loaded_model.metrics_names[1], score * 100))
 print(loaded_model.metrics_names[0], "{:10.4f}".format(loss))
+
+# load json and create model
+json_file = open('model_tuned_two.json', 'r')
+loaded_model_json = json_file.read()
+json_file.close()
+loaded_model = model_from_json(loaded_model_json)
+# load weights into new model
+loaded_model.load_weights("model_tuned_two.h5")
+print("Loaded model from disk")
+
+# evaluate loaded model on test data
+loaded_model.compile(loss='categorical_crossentropy', optimizer=Adam(lr=0.001), metrics=['accuracy'])
+loss, score = loaded_model.evaluate(val_ds, verbose=2)
+print("Tuned - One additional layer")
+print("%s: %.2f%%" % (loaded_model.metrics_names[1], score * 100))
+print(loaded_model.metrics_names[0], "{:10.4f}".format(loss))
