@@ -1,31 +1,10 @@
 import tensorflow as tf
 import matplotlib.pyplot as plt
 import numpy as np
+from aerial_dataset import dataset_creation
 
 
-def dataset_creation():
-  train_ds = tf.keras.utils.image_dataset_from_directory(
-    "C:/aerial_images",
-    validation_split=0.2,
-    subset="training",
-    label_mode="categorical",
-    seed=123,
-    image_size=(img_height, img_width),
-    batch_size=batch_size)
-
-  val_ds = tf.keras.utils.image_dataset_from_directory(
-    "C:/aerial_images",
-    validation_split=0.2,
-    subset="validation",
-    label_mode="categorical",
-    seed=123,
-    image_size=(img_height, img_width),
-    batch_size=batch_size)
-
-  return train_ds, val_ds
-
-
-def augmentation_viewer(dataset, augmentations):
+def augmentation_viewer(dataset, augmentations, batch_size):
   class_names = dataset.class_names
   for images, labels in dataset.take(1):
     for i in range(batch_size):
@@ -53,11 +32,10 @@ def create_augmentation():
 
   return all_augmentations
 
+def main():
+  train_ds, val_ds = dataset_creation(224,224,8)
+  augmentations = create_augmentation()
+  augmentation_viewer(train_ds, augmentations, 1)
 
 if __name__ == '__main__':
-  batch_size = 1
-  img_height = 224
-  img_width = 224
-  train_ds, val_ds = dataset_creation()
-  augmentations = create_augmentation()
-  augmentation_viewer(train_ds, augmentations)
+  main()

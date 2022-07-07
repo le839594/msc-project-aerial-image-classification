@@ -6,28 +6,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import confusion_matrix
 from cf_matrix import make_confusion_matrix
-
-
-def dataset_creation():
-    train_ds = tf.keras.utils.image_dataset_from_directory(
-        "C:/aerial_images",
-        validation_split=0.2,
-        subset="training",
-        label_mode="categorical",
-        seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size)
-
-    val_ds = tf.keras.utils.image_dataset_from_directory(
-        "C:/aerial_images",
-        validation_split=0.2,
-        subset="validation",
-        label_mode="categorical",
-        seed=123,
-        image_size=(img_height, img_width),
-        batch_size=batch_size)
-
-    return train_ds, val_ds
+from aerial_dataset import dataset_creation
 
 
 def revaluate_model(model_json_file, model_h5_file, val_ds):
@@ -84,16 +63,15 @@ def plot_confusion_matrix(val_ds, loaded_model, file_name):
     plt.savefig(file_name + ".png", bbox_inches='tight')
     plt.show()
 
-
-if __name__ == '__main__':
-    batch_size = 8
-    img_height = 224
-    img_width = 224
-    train_ds, val_ds = dataset_creation()
+def main():
+    train_ds, val_ds = dataset_creation(224,224,8)
     baseline_model = revaluate_model("model_baseline.json", "model_baseline.h5", val_ds)
     tuned_model_one = revaluate_model("model_tuned_one.json", "model_tuned_one.h5", val_ds)
     tuned_model_two = revaluate_model("model_tuned_two.json", "model_tuned_two.h5", val_ds)
     plot_confusion_matrix(val_ds, baseline_model, "confusion_baseline.png")
     plot_confusion_matrix(val_ds, tuned_model_one, "confusion_tuned_one.png")
     plot_confusion_matrix(val_ds, tuned_model_two, "confusion_tuned_two.png")
+
+if __name__ == '__main__':
+    main()
 
