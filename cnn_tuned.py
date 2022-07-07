@@ -1,51 +1,23 @@
 import tensorflow as tf
-from tensorflow.keras.models import model_from_json
 from tensorflow.keras.optimizers import Adam
 import keras_tuner as kt
 from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint,ReduceLROnPlateau
-import matplotlib.pyplot as plt
-
-batch_size = 8
-img_height = 224
-img_width = 224
+from aerial_dataset import dataset_creation, plot_training, model_evaluation, save_model
 
 
-train_ds = tf.keras.utils.image_dataset_from_directory(
-  "C:/aerial_images",
-  validation_split=0.2,
-  subset="training",
-  label_mode="categorical",
-  seed=123,
-  image_size=(img_height, img_width),
-  batch_size=batch_size)
-
-
-val_ds =tf.keras.utils.image_dataset_from_directory(
-  "C:/aerial_images",
-  validation_split=0.2,
-  subset="validation",
-  label_mode="categorical",
-  seed=123,
-  image_size=(img_height, img_width),
-  batch_size=batch_size)
-
-class_names = train_ds.class_names
-print(class_names)
-
-data_augmentation = tf.keras.Sequential([
+def create_augmentation():
+  all_augmentations = tf.keras.Sequential([
   tf.keras.layers.RandomFlip("horizontal_and_vertical"),
   tf.keras.layers.RandomRotation(0.2)
-])
+  ])
 
-
-
-
+  return all_augmentations
 
 def build_model(hp):  # random search passes this hyperparameter() object
     # define architecture layer by layer
     model = tf.keras.Sequential()
     # add augmentation
-    model.add(data_augmentation)
+    model.add(create_augmentation())
     # apply normalisation
     model.add(tf.keras.layers.Rescaling(1. / 255))
     # Convolutional layers and AveragePooling
@@ -72,79 +44,59 @@ def build_model(hp):  # random search passes this hyperparameter() object
     model.compile(optimizer=Adam(lr=0.001), loss='categorical_crossentropy', metrics=['accuracy'])
     return model
 
-# set batch size for tuning
-batch_size = 64
-# define Hyperband tuner used to tune the fully connected layer
-tuner = kt.Hyperband(build_model,
-                     objective='val_accuracy',
-                     max_epochs=50,
-                     factor=8,
-                     hyperband_iterations=3,
-                     directory='tuning',
-                     project_name='neuron tuning')
-# early stopping if no improvement in validation accuracy is shown after a set period
-stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15)
-# start search with Hyperband
-tuner.search(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=150, callbacks=[stop_early])
-# get the optimal hyperparameters identified
-best_hps=tuner.get_best_hyperparameters(num_trials=1)[0]
-# print the best number of neurons
-print(f"""
-The optimal number of units in the new densely-connected
-layer is {best_hps.get('units_hp')}
-""")
+def tuning(train_ds, val_ds, proj_name):
+    # set batch size for tuning
+    batch_size = 64
+    # define Hyperband tuner used to tune the fully connected layer
+    tuner = kt.Hyperband(build_model,
+                         objective='val_accuracy',
+                         max_epochs=1,
+                         factor=2,
+                         hyperband_iterations=1,
+                         directory='tuning',
+                         project_name=proj_name)
+    # early stopping if no improvement in validation accuracy is shown after a set period
+    stop_early = tf.keras.callbacks.EarlyStopping(monitor='val_accuracy', patience=15)
+    # start search with Hyperband
+    tuner.search(train_ds, validation_data=val_ds, batch_size=batch_size, epochs=5, callbacks=[stop_early])
+    # get the optimal hyperparameters identified
+    best_hps = tuner.get_best_hyperparameters(num_trials=1)[0]
+    # print the best number of neurons
+    print(f"""
+    The optimal number of units in the new densely-connected
+    layer is {best_hps.get('units_hp')}
+    """)
+    return best_hps, tuner
 
 
-# Build the model with the optimal hyperparameters and train it on the data for 150 epochs
-model = tuner.hypermodel.build(best_hps)
-history = model.fit(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=150)
+def train_optimal_model(best_hps, tuner, train_ds, val_ds, batch_size):
+    # Build the model with the optimal hyperparameters and train it on the data for 150 epochs
+    model = tuner.hypermodel.build(best_hps)
+    history = model.fit(train_ds, validation_data=val_ds, batch_size=batch_size, epochs=3)
 
-val_acc_per_epoch = history.history['val_accuracy']
-best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
-print('Best epoch: %d' % (best_epoch,))
+    val_acc_per_epoch = history.history['val_accuracy']
+    best_epoch = val_acc_per_epoch.index(max(val_acc_per_epoch)) + 1
+    print('Best epoch: %d' % (best_epoch,))
 
-hypermodel = tuner.hypermodel.build(best_hps)
+    hypermodel = tuner.hypermodel.build(best_hps)
 
-mcp_save = ModelCheckpoint('.mdl_wts_best_model_tuned.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
+    mcp_save = ModelCheckpoint('.mdl_wts_model_tuned_one.hdf5', save_best_only=True, monitor='val_accuracy',
+                               mode='max')
 
-# Retrain the model
-history = hypermodel.fit(train_ds, validation_data = val_ds, batch_size=batch_size, epochs=best_epoch, callbacks=[mcp_save])
+    # Retrain the model
+    history = hypermodel.fit(train_ds, validation_data=val_ds, batch_size=batch_size, epochs=best_epoch,
+                             callbacks=[mcp_save])
+    return history, hypermodel
 
-fig1 = plt.gcf()
-plt.plot(history.history['accuracy'])
-plt.plot(history.history['val_accuracy'])
-plt.axis(ymin=0.0,ymax=1)
-plt.grid()
-plt.title('Model Accuracy')
-plt.ylabel('Accuracy')
-plt.xlabel('Epochs')
-plt.legend(['train', 'validation'])
-plt.show()
 
-fig2 = plt.gcf()
-plt.plot(history.history['loss'])
-plt.plot(history.history['val_loss'])
-plt.axis(ymin=0.0,ymax=2)
-plt.grid()
-plt.title('Model Loss')
-plt.ylabel('Loss')
-plt.xlabel('Epochs')
-plt.legend(['train', 'validation'])
-plt.show()
+def main():
+  train_ds, val_ds = dataset_creation(224, 224, 8)
+  best_hps, tuner = tuning(train_ds, val_ds, "neuron tuning")
+  train_history, hypermodel = train_optimal_model(best_hps, tuner, train_ds, val_ds, 64)
+  plot_training(train_history)
+  model_evaluation(val_ds, hypermodel, '.mdl_wts_model_tuned_one.hdf5')
+  save_model(hypermodel, "model_tuned_one")
 
-# evaluate on test set
-# Loads the weights
-hypermodel.load_weights('.mdl_wts_best_model_tuned.hdf5')
 
-# Re-evaluate the model
-loss, acc = hypermodel.evaluate(val_ds, verbose=2)
-print("Restored model, accuracy: {:5.2f}%".format(100 * acc))
-
-# serialize model to JSON
-model_json = hypermodel.to_json()
-with open("model_tuned_one.json", "w") as json_file:
-    json_file.write(model_json)
-# serialize weights to HDF5
-hypermodel.save_weights("model_tuned_one.h5")
-print("Saved model to disk")
-
+if __name__ == '__main__':
+  main()
