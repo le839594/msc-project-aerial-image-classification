@@ -22,6 +22,39 @@ def dataset_creation(img_height, img_width, batch_size):
 
     return train_ds, val_ds
 
+def dataset_creation_custom(split, img_height, img_width, batch_size, path):
+    if split == 1.0:
+        dataset = tf.keras.utils.image_dataset_from_directory(
+            path,
+            label_mode="categorical",
+            seed=123,
+            image_size=(img_height, img_width),
+            batch_size=batch_size)
+        return dataset
+    else:
+        train_ds = tf.keras.utils.image_dataset_from_directory(
+        path,
+        validation_split=split,
+        subset="training",
+        label_mode="categorical",
+        seed=123,
+        image_size=(img_height, img_width),
+        batch_size=batch_size)
+
+        val_ds = tf.keras.utils.image_dataset_from_directory(
+        path,
+        validation_split=split,
+        subset="validation",
+        label_mode="categorical",
+        seed=123,
+        image_size=(img_height, img_width),
+        batch_size=batch_size)
+
+        return train_ds, val_ds
+
+
+
+
 def plot_training(history):
 
   fig1 = plt.gcf()

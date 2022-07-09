@@ -2,7 +2,7 @@ import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 import keras_tuner as kt
 from tensorflow.keras.callbacks import EarlyStopping,ModelCheckpoint,ReduceLROnPlateau
-from aerial_dataset import dataset_creation, plot_training, model_evaluation, save_model
+from aerial_dataset import dataset_creation, plot_training, model_evaluation, save_model, dataset_creation_custom
 
 
 def create_augmentation():
@@ -84,7 +84,7 @@ def train_optimal_model(best_hps, tuner, train_ds, val_ds, batch_size):
 
     hypermodel = tuner.hypermodel.build(best_hps)
 
-    mcp_save = ModelCheckpoint('.mdl_wts_best_model_tuned_2.hdf5', save_best_only=True, monitor='val_accuracy',
+    mcp_save = ModelCheckpoint('.mdl_wts_best_model_tuned_2_augmented.hdf5', save_best_only=True, monitor='val_accuracy',
                                mode='max')
 
     # Retrain the model
@@ -94,12 +94,13 @@ def train_optimal_model(best_hps, tuner, train_ds, val_ds, batch_size):
 
 
 def main():
-  train_ds, val_ds = dataset_creation(224, 224, 8)
-  best_hps, tuner = tuning(train_ds, val_ds, "neuron tuning 2")
+  #train_ds, val_ds = dataset_creation(224, 224, 8)
+  train_ds, val_ds = dataset_creation_custom(0.8, 224, 224, 8, "C:/aerial_images_with_added_augmented_set")
+  best_hps, tuner = tuning(train_ds, val_ds, "neuron tuning 2 augmented")
   train_history, hypermodel = train_optimal_model(best_hps, tuner, train_ds, val_ds, 64)
   plot_training(train_history)
-  model_evaluation(val_ds, hypermodel, '.mdl_wts_best_model_tuned_2.hdf5')
-  save_model(hypermodel, "model_tuned_two")
+  model_evaluation(val_ds, hypermodel, '.mdl_wts_best_model_tuned_2_augmented.hdf5')
+  save_model(hypermodel, "model_tuned_two_augmented_set")
 
 
 if __name__ == '__main__':
