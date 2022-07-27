@@ -47,7 +47,7 @@ def model_training(train_ds, val_ds, model):
   batch_size = 32
 
   earlyStopping = EarlyStopping(monitor='val_accuracy', patience=30, verbose=0, mode='max')
-  mcp_save = ModelCheckpoint('.mdl_wts_baseline_augmentation.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
+  mcp_save = ModelCheckpoint('.mdl_wts_baseline.hdf5', save_best_only=True, monitor='val_accuracy', mode='max')
   # reduce_lr_loss = ReduceLROnPlateau(monitor='val_loss', factor=0.1, patience=7, verbose=1, epsilon=1e-4, mode='min')
 
   history = model.fit(train_ds, validation_data=val_ds, batch_size=batch_size, epochs=150,
@@ -56,14 +56,13 @@ def model_training(train_ds, val_ds, model):
   return history
 
 def main():
-  #train_ds, val_ds = dataset_creation(224, 224, 8)
-  train_ds, val_ds = dataset_creation_custom(0.8, 224, 224, 8, "C:/aerial_images_with_added_augmented_set")
+  train_ds, val_ds = dataset_creation(224, 224, 8)
   augmentations = create_augmentation()
   model = model_creation(augmentations)
   train_history = model_training(train_ds, val_ds, model)
   plot_training(train_history)
-  model_evaluation(val_ds, model, ".mdl_wts_baseline_augmentation.hdf5")
-  save_model(model, "model_baseline_augmentation")
+  model_evaluation(val_ds, model, ".mdl_wts_baseline.hdf5")
+  save_model(model, "model_baseline")
 
 
 if __name__ == '__main__':

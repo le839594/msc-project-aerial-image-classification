@@ -80,7 +80,7 @@ def train_optimal_model(best_hps, tuner, train_ds, val_ds, batch_size):
 
     hypermodel = tuner.hypermodel.build(best_hps)
 
-    mcp_save = ModelCheckpoint('.mdl_wts_model_tuned_one_augmented_set.hdf5', save_best_only=True, monitor='val_accuracy',
+    mcp_save = ModelCheckpoint('.mdl_wts_model_tuned_one.hdf5', save_best_only=True, monitor='val_accuracy',
                                mode='max')
 
     # Retrain the model
@@ -90,13 +90,12 @@ def train_optimal_model(best_hps, tuner, train_ds, val_ds, batch_size):
 
 
 def main():
-  #train_ds, val_ds = dataset_creation(224, 224, 8)
-  train_ds, val_ds = dataset_creation_custom(0.8, 224, 224, 8, "C:/aerial_images_with_added_augmented_set")
-  best_hps, tuner = tuning(train_ds, val_ds, "neuron tuning augmented")
+  train_ds, val_ds = dataset_creation(224, 224, 8)
+  best_hps, tuner = tuning(train_ds, val_ds, "neuron tuning")
   train_history, hypermodel = train_optimal_model(best_hps, tuner, train_ds, val_ds, 64)
   plot_training(train_history)
-  model_evaluation(val_ds, hypermodel, '.mdl_wts_model_tuned_one_augmented_set.hdf5')
-  save_model(hypermodel, "model_tuned_one_augmented_set")
+  model_evaluation(val_ds, hypermodel, '.mdl_wts_model_tuned_one.hdf5')
+  save_model(hypermodel, "model_tuned_one")
 
 
 if __name__ == '__main__':
