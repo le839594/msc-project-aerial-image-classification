@@ -65,22 +65,19 @@ def plot_confusion_matrix(val_ds, loaded_model, file_name):
 
 def main():
     train_ds, val_ds = dataset_creation(224,224,8)
-    val_set_for_augmented = dataset_creation_custom(1.0, 224, 224, 8, "C:/eval_set_ for_augmentation_exp")
+    val_set_for_augmented = dataset_creation_custom(1.0, 224, 224, 8, "C:/eval_set_for_augmentation_exp_class_dist")
+    #train_set_for_augmented = dataset_creation_custom(1.0, 224, 224, 8, "C:/aerial_images_with_added_augmented_set_class_dist")
+    # revaluate all models
     baseline_model = revaluate_model("model_baseline.json", "model_baseline.h5", val_ds)
     tuned_model_one = revaluate_model("model_tuned_one.json", "model_tuned_one.h5", val_ds)
     tuned_model_two = revaluate_model("model_tuned_two.json", "model_tuned_two.h5", val_ds)
-    baseline_model_augmented_set = revaluate_model("model_baseline_augmentation.json", "model_baseline_augmentation.h5",
-                                                    val_set_for_augmented)
-    tuned_model_one_augmented_set = revaluate_model("model_tuned_one_augmented_set.json", "model_tuned_one_augmented_set.h5",
-                                                   val_set_for_augmented)
     tuned_model_two_augmented_set = revaluate_model("model_tuned_two_augmented_set.json",
                                                    "model_tuned_two_augmented_set.h5",
                                                    val_set_for_augmented)
+    # plot confusion matrixes for all models
     plot_confusion_matrix(val_ds, baseline_model, "confusion_baseline.png")
     plot_confusion_matrix(val_ds, tuned_model_one, "confusion_tuned_one.png")
     plot_confusion_matrix(val_ds, tuned_model_two, "confusion_tuned_two.png")
-    plot_confusion_matrix(val_set_for_augmented, baseline_model_augmented_set, "confusion_baseline_augmented_set.png")
-    plot_confusion_matrix(val_set_for_augmented, tuned_model_one_augmented_set, "confusion_tuned_one_augmented_set.png")
     plot_confusion_matrix(val_set_for_augmented, tuned_model_two_augmented_set, "confusion_tuned_two_augmented_set.png")
 
 if __name__ == '__main__':
