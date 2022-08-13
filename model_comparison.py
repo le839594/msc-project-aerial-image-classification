@@ -7,6 +7,7 @@ import numpy as np
 from sklearn.metrics import confusion_matrix
 from cf_matrix import make_confusion_matrix
 from aerial_dataset import dataset_creation, dataset_creation_custom
+from roc_curves import plot_roc_curve
 
 
 def revaluate_model(model_json_file, model_h5_file, val_ds):
@@ -50,6 +51,10 @@ def plot_confusion_matrix(val_ds, loaded_model, file_name):
     # convert to value array
     y_true = tf.math.argmax(correct_labels, 1)
     y_pred = tf.math.argmax(predictions, 1)
+    y_true_roc = np.array([correct_labels])
+    y_pred_roc = np.array([encoded])
+    # roc curves plotting
+    plot_roc_curve(np.squeeze(y_true_roc), np.squeeze(y_pred_roc))
     # create confusion matrix
     cf_matrix = confusion_matrix(y_true, y_pred)
     labels = ['True Neg', 'False Pos', 'False Neg', 'True Pos']
