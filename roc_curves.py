@@ -5,7 +5,7 @@ from sklearn.model_selection import train_test_split
 
 # function to plot roc curves for each model
 
-def plot_roc_curve(y_test, y_score):
+def plot_roc_curve(y_test, y_score, file_name):
     import numpy as np
     from scipy import interp
     import matplotlib.pyplot as plt
@@ -67,8 +67,10 @@ def plot_roc_curve(y_test, y_score):
     plt.ylim([0.0, 1.05])
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Some extension of Receiver operating characteristic to multi-class')
+    plt.title('Receiver operating characteristic (ROC) curve to multi-class')
     plt.legend(loc="lower right")
+    # save to file and show
+    plt.savefig(file_name + ".png", bbox_inches='tight')
     plt.show()
 
     # Zoom in view of the upper left corner.
@@ -94,8 +96,10 @@ def plot_roc_curve(y_test, y_score):
     plt.plot([0, 1], [0, 1], 'k--', lw=lw)
     plt.xlabel('False Positive Rate')
     plt.ylabel('True Positive Rate')
-    plt.title('Some extension of Receiver operating characteristic to multi-class')
+    plt.title('Receiver operating characteristic (ROC) curve to multi-class')
     plt.legend(loc="lower right")
+    # save to file and show
+    plt.savefig(file_name + "_zoom view.png", bbox_inches='tight')
     plt.show()
 
 

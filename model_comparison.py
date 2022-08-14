@@ -29,7 +29,7 @@ def revaluate_model(model_json_file, model_h5_file, val_ds):
     return loaded_model
 
 
-def plot_confusion_matrix(val_ds, loaded_model, file_name):
+def plot_confusion_matrix(val_ds, loaded_model, file_name1, file_name2):
     y_pred = []  # store predicted labels
     y_true = []  # store true labels
     # iterate over the dataset
@@ -54,7 +54,7 @@ def plot_confusion_matrix(val_ds, loaded_model, file_name):
     y_true_roc = np.array([correct_labels])
     y_pred_roc = np.array([encoded])
     # roc curves plotting
-    plot_roc_curve(np.squeeze(y_true_roc), np.squeeze(y_pred_roc))
+    plot_roc_curve(np.squeeze(y_true_roc), np.squeeze(y_pred_roc), file_name1)
     # create confusion matrix
     cf_matrix = confusion_matrix(y_true, y_pred)
     labels = ['True Neg', 'False Pos', 'False Neg', 'True Pos']
@@ -65,7 +65,7 @@ def plot_confusion_matrix(val_ds, loaded_model, file_name):
                           figsize=(10, 6),
                           cmap='binary')
     # save to file and show
-    plt.savefig(file_name + ".png", bbox_inches='tight')
+    plt.savefig(file_name2 + ".png", bbox_inches='tight')
     plt.show()
 
 def main():
@@ -80,10 +80,10 @@ def main():
                                                    "model_tuned_two_augmented_set.h5",
                                                    val_set_for_augmented)
     # plot confusion matrixes for all models
-    plot_confusion_matrix(val_ds, baseline_model, "confusion_baseline.png")
-    plot_confusion_matrix(val_ds, tuned_model_one, "confusion_tuned_one.png")
-    plot_confusion_matrix(val_ds, tuned_model_two, "confusion_tuned_two.png")
-    plot_confusion_matrix(val_set_for_augmented, tuned_model_two_augmented_set, "confusion_tuned_two_augmented_set.png")
+    plot_confusion_matrix(val_ds, baseline_model, "ROC_baseline", "confusion_baseline.png")
+    plot_confusion_matrix(val_ds, tuned_model_one, "ROC_tuned_one", "confusion_tuned_one.png")
+    plot_confusion_matrix(val_ds, tuned_model_two, "ROC_tuned_two", "confusion_tuned_two.png")
+    plot_confusion_matrix(val_set_for_augmented, tuned_model_two_augmented_set, "ROC_tuned_two_augmented", "confusion_tuned_two_augmented_set.png")
 
 if __name__ == '__main__':
     main()
